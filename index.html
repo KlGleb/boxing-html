@@ -6,7 +6,10 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://apis.google.com/js/api.js"></script>
     <script>
+        var table = [];
+
         $(document).ready(function () {
+
             $('#loadButton').on('click', function () {
                 let spreadsheetId = $('#spreadsheetId').val();
                 let sheetName = $('#sheetName').val();
@@ -27,7 +30,7 @@
                             let values = response.result.values;
 
                             if (values && values.length > 0) {
-                                let data = [];
+
                                 for (let i = 0; i < values.length; i++) {
                                     if (values[i][0]) {
                                         let row = {};
@@ -42,15 +45,15 @@
                                         row.hBox = parseFloat(values[i][11]);
 
 
-                                        data.push(row);
+                                        table.push(row);
                                     }
                                 }
-                                // displayData(data);
-                                console.log(data)
+                                // displayData(table);
+                                console.log(table)
 
-                                $('#utilization').html("Utilization: <b>" + getUtilization(data) + "</b>");
+                                $('#utilization').html("Utilization: <b>" + getUtilization(table) + "</b>");
 
-                                let box = getNewBox(data)
+                                let box = getNewBox(table)
 
                                 $('#box').html("New Box: <b>" + box.l + " x " + box.w + " x " + box.h + "</b>, " +
                                     "utilization: <b>" + box.utilisation + "</b>" +
@@ -59,13 +62,136 @@
                                     "<button id='saveButton'>Save result as csv</button>");
 
 
-                                let newData = getTableForBox(data, box.l, box.w, box.h);
+                                let newData = getTableForBox(table, box.l, box.w, box.h);
                                 document.getElementById('saveButton').addEventListener('click', ev => {
                                     saveCSV(newData);
                                 });
                                 displayData(newData);
 
+                                $('#load_boxes').show();
 
+                            }
+                        }, function (reason) {
+                            $('#content').html('Error: <b>' + reason.result.error.message + '</b>');
+                            console.log('Error: ' + reason.result.error.message);
+                        });
+                    });
+                }
+            });
+
+            $('#loadBoxesButton').on('click', function () {
+                let spreadsheetId = $('#spreadsheetBoxesId').val();
+                let sheetName = $('#sheetBoxesName').val();
+                let startRow = 2; // starting row for reading
+
+                if (spreadsheetId && sheetName) {
+                    gapi.load('client', function () {
+                        gapi.client.init({
+                            apiKey: 'AIzaSyD-YbjZSIF6UT_CPjDgylg1AmYcW6gF-7U',
+                            discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4']
+                        }).then(function () {
+                            return gapi.client.sheets.spreadsheets.values.get({
+                                spreadsheetId: spreadsheetId,
+                                range: sheetName + '!A' + startRow + ':L'
+                            });
+                        }).then(function (response) {
+
+                            let values = response.result.values;
+
+                            if (values && values.length > 0) {
+                                let boxes = [];
+                                for (let i = 0; i < values.length; i++) {
+                                    if (values[i][0]) {
+                                        let row = {};
+                                        row.code = values[i][7];
+                                        row.l = parseFloat(values[i][8]);
+                                        row.w = parseFloat(values[i][9]);
+                                        row.h = parseFloat(values[i][10]);
+                                        boxes.push(row);
+                                    }
+                                }
+                                // displayData(data);
+                                console.log(boxes)
+
+
+                                let res = [];
+                                table.forEach((row) => {
+                                    res.push({
+                                        tbl: row,
+                                        box: {
+                                            code: row.boxCode,
+                                            l: row.lBox,
+                                            w: row.wBox,
+                                            h: row.hBox,
+                                        }
+                                    })
+
+                                    console.log(row);
+                                    console.log(res[res.length - 1]);
+                                });
+
+                                console.log(res);
+
+                                boxes.forEach((box) => {
+                                    for (let i = 0; i < res.length; i++) {
+                                        let tableItem = res[i];
+
+                                        if (isBoxAppropriate(tableItem.tbl, box) && betterThan(box, tableItem.box)) {
+                                            res[i].box.code = box.code;
+                                            res[i].box.l = box.l;
+                                            res[i].box.w = box.w;
+                                            res[i].box.h = box.h;
+                                        }
+                                    }
+                                });
+
+                                let oldTable = [];
+                                let newTable = [];
+
+                                res.forEach((it) => {
+                                    newTable.push({
+                                            barcode: it.tbl.barcode,
+                                            length: it.tbl.length,
+                                            width: it.tbl.width,
+                                            height: it.tbl.height,
+                                            stock: it.tbl.stock,
+                                            oldBox: it.tbl.boxCode === it.box.code ? '' : it.tbl.boxCode,
+                                            oldBoxLength: it.tbl.lBox === it.box.l ? '' : it.tbl.lBox,
+                                            oldBoxWidth: it.tbl.wBox === it.box.w ? '' : it.tbl.wBox,
+                                            oldBoxHeight: it.tbl.hBox === it.box.h ? '' : it.tbl.hBox,
+                                            boxCode: it.box.code,
+                                            lBox: it.box.l,
+                                            wBox: it.box.w,
+                                            hBox: it.box.h,
+                                        }
+                                    );
+                                    oldTable.push({
+                                            barcode: it.tbl.barcode,
+                                            length: it.tbl.length,
+                                            width: it.tbl.width,
+                                            height: it.tbl.height,
+                                            stock: it.tbl.stock,
+                                            boxCode: it.tbl.boxCode,
+                                            lBox: it.tbl.lBox,
+                                            wBox: it.tbl.wBox,
+                                            hBox: it.tbl.hBox,
+                                        }
+                                    );
+                                });
+
+                                console.log(newTable);
+
+
+                                $('#utilization_boxes').html("Newu Utilization: <b>" + getUtilization(newTable) + "</b>" +
+                                    "</br>" +
+                                    "Old utilization: <b>" + getUtilization(oldTable) + "</b>");
+
+
+                                $('#boxes_result').html("<button id='saveBoxesButton'>Save result as csv</button>");
+
+                                document.getElementById('saveBoxesButton').addEventListener('click', ev => {
+                                    saveCSV(newTable);
+                                });
                             }
                         }, function (reason) {
                             $('#content').html('Error: <b>' + reason.result.error.message + '</b>');
@@ -80,7 +206,7 @@
                     return el.isNew;
                 });
 
-                let table = '<br/><h5>The box is appropriate for these items:</h5>' +
+                let table = '<br/><h2>The box is appropriate for these items:</h2>' +
                     '<table>';
                 table += '<tr><th>Product Code</th><th>Length</th><th>Width</th><th>Height</th><th>Quantity</th></tr>';
                 for (let i = 0; i < data.length; i++) {
@@ -257,6 +383,14 @@
             link.setAttribute('download', 'data.csv');
             link.click();
         }
+
+        function isBoxAppropriate(tableItem, box) {
+            return (tableItem.height <= box.h && ((tableItem.length <= box.l && tableItem.width <= box.w) || (tableItem.width <= box.l && tableItem.length <= box.w)))
+        }
+
+        function betterThan(box1, box2) {
+            return (box1.l * box1.w * box1.h) < (box2.w * box2.l * box2.h)
+        }
     </script>
 </head>
 <body>
@@ -268,8 +402,24 @@
 <div id="utilization"></div>
 <div id="box">
 </div>
+
+<div id="load_boxes" style="display: none">
+    <h2>Now you can upload a list of boxes</h2>
+    <input type="text" id="spreadsheetBoxesId" placeholder="Table id"
+           value="1fXjB29Aox4hoIV0gODujQHctfDu8BSAVp01EDfRWJVk">
+    <input type="text" id="sheetBoxesName" placeholder="Sheet name" value="Volume of Raja boxes">
+    <button id="loadBoxesButton">Load and calculate</button>
+
+    <div id="utilization_boxes"></div>
+    <div id="boxes_result">
+
+    </div>
+</div>
+
 <div id="box_table"></div>
 <br/>
+
+
 
 </body>
 </html>
