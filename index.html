@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Read Google Sheets into Array</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script>
+        $(document).ready(function () {
+            $('#loadButton').on('click', function () {
+                let spreadsheetId = $('#spreadsheetId').val();
+                let sheetName = $('#sheetName').val();
+                let startRow = 4; // starting row for reading
+
+                if (spreadsheetId && sheetName) {
+                    gapi.load('client', function () {
+                        gapi.client.init({
+                            apiKey: 'AIzaSyD-YbjZSIF6UT_CPjDgylg1AmYcW6gF-7U',
+                            discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4']
+                        }).then(function () {
+                            return gapi.client.sheets.spreadsheets.values.get({
+                                spreadsheetId: spreadsheetId,
+                                range: sheetName + '!A' + startRow + ':L'
+                            });
+                        }).then(function (response) {
+
+                            let values = response.result.values;
+
+                            if (values && values.length > 0) {
+                                let data = [];
+                                for (let i = 0; i < values.length; i++) {
+                                    if (values[i][0]) {
+                                        let row = {};
+                                        row.barcode = values[i][0];
+                                        row.length = parseFloat(values[i][1]);
+                                        row.width = parseFloat(values[i][2]);
+                                        row.height = parseFloat(values[i][3]);
+                                        row.stock = parseInt(values[i][4]);
+                                        row.boxCode = values[i][8];
+                                        row.lBox = parseFloat(values[i][9]);
+                                        row.wBox = parseFloat(values[i][10]);
+                                        row.hBox = parseFloat(values[i][11]);
+
+
+                                        data.push(row);
+                                    }
+                                }
+                                // displayData(data);
+                                console.log(data)
+
+                                $('#utilization').html("Utilization: <b>" + getUtilization(data) + "</b>");
+
+                                let box = getNewBox(data)
+
+                                $('#box').html("New Box: <b>" + box.l + " x " + box.w + " x " + box.h + "</b>, " +
+                                    "utilization: <b>" + box.utilisation + "</b>" +
+                                    "" +
+                                    "<br/>" +
+                                    "<button id='saveButton'>Save result as csv</button>");
+
+
+                                let newData = getTableForBox(data, box.l, box.w, box.h);
+                                document.getElementById('saveButton').addEventListener('click', ev => {
+                                    saveCSV(newData);
+                                });
+                                displayData(newData);
+
+
+                            }
+                        }, function (reason) {
+                            $('#content').html('Error: <b>' + reason.result.error.message + '</b>');
+                            console.log('Error: ' + reason.result.error.message);
+                        });
+                    });
+                }
+            });
+
+            function displayData(arr) {
+                let data = arr.filter(function (el) {
+                    return el.isNew;
+                });
+
+                let table = '<br/><h5>The box is appropriate for these items:</h5>' +
+                    '<table>';
+                table += '<tr><th>Product Code</th><th>Box Length</th><th>Box Width</th><th>Box Height</th><th>Quantity</th></tr>';
+                for (let i = 0; i < data.length; i++) {
+                    table += '<tr>';
+                    table += '<td>' + data[i].barcode + '</td>';
+                    table += '<td>' + data[i].length + '</td>';
+                    table += '<td>' + data[i].width + '</td>';
+                    table += '<td>' + data[i].height + '</td>';
+                    table += '<td>' + data[i].stock + '</td>';
+                    table += '</tr>';
+                }
+                table += '</table>';
+                $('#box_table').html(table);
+            }
+
+            function getUtilization(data) {
+                let v = 0.0
+                let vBox = 0.0
+                for (let i in data) {
+                    let it = data[i];
+                    v += it.length * it.width * it.height * it.stock
+                    vBox += it.lBox * it.wBox * it.hBox * it.stock
+                }
+                return v / vBox
+            }
+
+            function getNewBox(data) {
+                let minI = Infinity;
+                let maxI = -Infinity;
+                let minJ = Infinity;
+                let maxJ = -Infinity;
+                let minK = Infinity;
+                let maxK = -Infinity;
+
+                data.forEach((obj) => {
+                    if (obj.length < minI) {
+                        minI = obj.length;
+                    }
+                    if (obj.length > maxI) {
+                        maxI = obj.length;
+                    }
+
+                    if (obj.width < minJ) {
+                        minJ = obj.width;
+                    }
+                    if (obj.width > maxJ) {
+                        maxJ = obj.width;
+                    }
+
+                    if (obj.height < minK) {
+                        minK = obj.height;
+                    }
+                    if (obj.height > maxK) {
+                        maxK = obj.height;
+                    }
+                });
+
+                let minUtilization = 0;
+                let minBoxL = 0;
+                let minBoxW = 0;
+                let minBoxH = 0;
+
+                let i = minI;
+                let j;
+                let k;
+
+                let current = 0;
+                let total = ((maxI - minI) * (maxJ - minJ) * (maxK - minK)) / (0.5 * 0.5 * 0.5);
+
+                while (i <= maxI) {
+                    j = minJ
+                    while (j <= maxJ) {
+                        k = minK
+                        while (k <= maxK) {
+                            let utilization = getUtilization(getTableForBox(data, i, j, k));
+                            if (utilization > minUtilization) {
+                                minUtilization = utilization
+                                minBoxL = i
+                                minBoxW = j
+                                minBoxH = k
+                            }
+
+                            // console.log(current / total);
+
+                            // document.getElementById('box_progress').value = 100 * (current / total);
+
+                            // updateProgress((current / total).toFloat())
+                            k += 0.5
+                            current++
+                        }
+                        j += 0.5
+                    }
+
+                    i += 0.5
+                }
+
+                return {l: minBoxL, w: minBoxW, h: minBoxH, utilisation: minUtilization};
+            }
+
+        });
+
+
+        function getTableForBox(data, l, w, h) {
+            let newArr = []
+            data.forEach((it) => {
+                if (it.height <= h && ((it.length <= l && it.width <= w) || (it.width <= l && it.length <= w)) &&
+                    ((it.length * it.width * it.height) / (it.lBox * it.wBox * it.hBox) < (it.length * it.width * it.height) / (l * w * h))
+                ) {
+                    newArr.push({
+                        barcode: it.barcode,
+                        length: it.length,
+                        width: it.width,
+                        height: it.height,
+                        stock: it.stock,
+                        boxCode: '',
+                        lBox: l,
+                        wBox: w,
+                        hBox: h,
+                        isNew: true
+                    });
+                } else {
+                    newArr.push({
+                        barcode: it.barcode,
+                        length: it.length,
+                        width: it.width,
+                        height: it.height,
+                        stock: it.stock,
+                        boxCode: it.boxCode,
+                        lBox: it.lBox,
+                        wBox: it.wBox,
+                        hBox: it.hBox,
+                        isNew: false,
+                    })
+                }
+            });
+
+            return newArr
+        }
+
+
+        function convertToCSV(objArray) {
+            const array = typeof objArray !== 'object' ? JSON.parse(objArray) : objArray;
+            let str = '';
+            let first = array[0];
+            let line = '';
+
+            for (let key in first) {
+                if (line !== '') line += ',';
+                line += key;
+            }
+
+            str += line + '\r\n';
+
+            for (let i = 1; i < array.length; i++) {
+                let line = '';
+
+                for (let key in array[i]) {
+                    if (line !== '') line += ',';
+                    line += array[i][key];
+                }
+
+                str += line + '\r\n';
+            }
+
+            return str;
+        }
+
+        function saveCSV(data) {
+            const csvData = convertToCSV(data);
+            const blob = new Blob([csvData], {type: 'text/csv;charset=utf-8;'});
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', 'data.csv');
+            link.click();
+        }
+    </script>
+</head>
+<body>
+<input type="text" id="spreadsheetId" placeholder="Table id" value="1_9WYObNErxslRqvDrFvM1lKeGS6QrbCfwol7QWsIltI">
+<input type="text" id="sheetName" placeholder="Sheet name" value="Sheet1">
+<button id="loadButton">Load and show</button>
+<div id="content"></div>
+<br/>
+<div id="utilization"></div>
+<div id="box">
+</div>
+<div id="box_table"></div>
+<br/>
+
+</body>
+</html>
+
+
