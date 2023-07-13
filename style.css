@@ -20,6 +20,10 @@ button:hover {
     background-color: #45a049;
 }
 
+button:disabled {
+    background-color: rgba(69, 160, 73, 0.25);
+}
+
 #content {
     margin-top: 20px;
 }

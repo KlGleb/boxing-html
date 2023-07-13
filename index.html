@@ -9,8 +9,14 @@
         var table = [];
 
         $(document).ready(function () {
+            $('#progress').hide();
+            $('#pr').hide();
 
             $('#loadButton').on('click', function () {
+                $('#loadButton').prop('disabled', true);
+                $('#pr').show();
+
+                table = [];
                 let spreadsheetId = $('#spreadsheetId').val();
                 let sheetName = $('#sheetName').val();
                 let startRow = 4; // starting row for reading
@@ -21,6 +27,7 @@
                             apiKey: 'AIzaSyD-YbjZSIF6UT_CPjDgylg1AmYcW6gF-7U',
                             discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4']
                         }).then(function () {
+                            log('Loading the spreadsheet');
                             return gapi.client.sheets.spreadsheets.values.get({
                                 spreadsheetId: spreadsheetId,
                                 range: sheetName + '!A' + startRow + ':L'
@@ -53,7 +60,9 @@
 
                                 $('#utilization').html("Utilization: <b>" + getUtilization(table) + "</b>");
 
+                                log('Calculating the new box');
                                 let box = getNewBox(table)
+                                log('Done');
 
                                 $('#box').html("New Box: <b>" + box.l + " x " + box.w + " x " + box.h + "</b>, " +
                                     "utilization: <b>" + box.utilisation + "</b>" +
@@ -69,7 +78,8 @@
                                 displayData(newData);
 
                                 $('#load_boxes').show();
-
+                                $('#loadButton').prop('disabled', false);
+                                $('#pr').hide();
                             }
                         }, function (reason) {
                             $('#content').html('Error: <b>' + reason.result.error.message + '</b>');
@@ -282,6 +292,14 @@
 
                 let current = 0;
                 let total = ((maxI - minI) * (maxJ - minJ) * (maxK - minK)) / (0.5 * 0.5 * 0.5);
+                let id = setInterval(frame, 10);
+                function frame() {
+                    let value = 100 * (current / total);
+                    document.getElementById('progress_bar').value = value
+                    if (value >= 100) {
+                        clearInterval(id);
+                    }
+                }
 
                 while (i <= maxI) {
                     j = minJ
@@ -301,6 +319,9 @@
                             // document.getElementById('box_progress').value = 100 * (current / total);
 
                             // updateProgress((current / total).toFloat())
+
+
+
                             k += 0.5
                             current++
                         }
@@ -398,12 +419,27 @@
         function betterThan(box1, box2) {
             return (box1.l * box1.w * box1.h) < (box2.w * box2.l * box2.h)
         }
+
+        function  log(msg) {
+           /* let div = document.createElement("item");
+            div.innerText = msg;
+            document.getElementById('console').appendChild(div);
+            document.getElementById('console').appendChild(document.createElement("br"));*/
+        }
     </script>
 </head>
 <body>
 <input type="text" id="spreadsheetId" placeholder="Table id" value="1_9WYObNErxslRqvDrFvM1lKeGS6QrbCfwol7QWsIltI">
 <input type="text" id="sheetName" placeholder="Sheet name" value="Sheet1">
 <button id="loadButton">Load and show</button>
+<div id="progress">
+    <label for="progress_bar">Progress:</label>
+    <progress id="progress_bar" value="0" max="100"></progress>
+</div>
+<div id="pr" >
+    <progress id="progress_bar2"></progress>
+</div>
+<div id="console"></div>
 <div id="content"></div>
 <br/>
 <div id="utilization"></div>
