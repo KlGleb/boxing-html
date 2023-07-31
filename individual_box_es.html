@@ -2,8 +2,8 @@
 <html>
 
 <head>
-    <title>Read Google Sheets into Array</title>
-    <link rel="stylesheet" href="style.css">
+    <title>Individual box for a new product</title>
+    <link rel="stylesheet" href="style2.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://apis.google.com/js/api.js"></script>
     <script>
@@ -11,12 +11,13 @@
 
         $(document).ready(function () {
             $('#submitButton').on('click', function () {
+                document.getElementById('submitButton').disabled = true;
                 $('#content').html('');
 
                 let tableItem = {
-                    length: document.getElementById('length').value,
-                    width: document.getElementById('width').value,
-                    height: document.getElementById('height').value,
+                    length: parseFloat(document.getElementById('length').value),
+                    width: parseFloat(document.getElementById('width').value),
+                    height: parseFloat(document.getElementById('height').value),
                 };
 
 
@@ -56,7 +57,12 @@
 
                                 console.log(table);
 
-                                let resBox = table[0];
+                                let resBox = {
+                                    box: '',
+                                    w: 1000,
+                                    l: 1000,
+                                    h: 1000,
+                                };
 
                                 for (let i in table) {
                                     let box = table[i];
@@ -67,14 +73,19 @@
                                     }
                                 }
 
-                                if (resBox.l && resBox.w && resBox.h) {
+                                if (resBox.box) {
                                     $('#content').html('' + resBox.l + 'X' + resBox.w + 'X' + resBox.h + '<br/>Box type: ' + resBox.box + '</b>');
+                                } else {
+                                    $('#content').html('Big product, please find the box manually');
                                 }
+
+                                document.getElementById('submitButton').disabled = false;
 
                             }
                         }, function (reason) {
                             $('#content').html('Error: <b>' + reason.result.error.message + '</b>');
                             console.log('Error: ' + reason.result.error.message);
+                            document.getElementById('submitButton').disabled = false;
                         });
                     });
                 }
@@ -99,14 +110,19 @@
 </head>
 
 <body>
+    <h1>ES</h1>
+    <h2>Individual box for a new product</h2>
+    <span>Please use dots (.) If the product is cylinder, diameter = length and diameter = width</span>
+
+    <br /><br />
     <div id="dimensionsDiv">
-        <label for="length">Length:</label><br>
+        <label for="length">Length, cm:</label><br>
         <input type="text" id="length" name="length" required>
         <span id="lengthError" class="error"></span><br>
-        <label for="width">Width:</label><br>
+        <label for="width">Width, cm:</label><br>
         <input type="text" id="width" name="width" required>
         <span id="widthError" class="error"></span><br>
-        <label for="height">Height:</label><br>
+        <label for="height">Height, cm:</label><br>
         <input type="text" id="height" name="height" required>
         <span id="heightError" class="error"></span><br>
         <button id="submitButton" disabled>Submit</button>

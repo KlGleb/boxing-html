@@ -1,8 +1,16 @@
-
-['length', 'width', 'height'].forEach(function(id) {
-    document.getElementById(id).addEventListener('input', function(event) {
+['length', 'width', 'height'].forEach(function(id, idx, array) {
+    var inputField = document.getElementById(id);
+    inputField.addEventListener('input', function(event) {
         validateAndShowErrors(id, event.target.value);
         checkDivValidity();
+    });
+    inputField.addEventListener('keydown', function(event) {
+        if (event.key === "Enter") {
+            event.preventDefault();
+            if (idx + 1 < array.length) {  // Check if there's another input field
+                document.getElementById(array[idx + 1]).focus();
+            }
+        }
     });
 });
 

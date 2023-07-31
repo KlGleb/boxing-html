@@ -1,0 +1,85 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #F0F0F0;
+}
+
+h1, h2 {
+    color: #333;
+}
+
+h1 {
+    font-size: 2em;
+    text-align: center;
+    padding-top: 20px;
+}
+
+h2 {
+    font-size: 1.5em;
+    text-align: center;
+    padding: 10px 0;
+}
+
+#dimensionsDiv {
+    margin: 0 auto;
+    width: 50%;
+    padding: 20px;
+    background-color: #FFF;
+    border-radius: 8px;
+    box-shadow: 0px 0px 20px 0px rgba(0,0,0,0.15);
+}
+
+label {
+    font-size: 1.2em;
+    color: #333;
+}
+
+input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+button {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    margin: 10px 0;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1.2em;
+}
+
+button:hover {
+    background-color: #45a049;
+}
+
+.error {
+    color: red;
+}
+
+#content {
+    margin: 20px auto;
+    width: 50%;
+    padding: 20px;
+    background-color: #FFF;
+    border-radius: 8px;
+    box-shadow: 0px 0px 20px 0px rgba(0,0,0,0.15);
+    text-align: center;
+    font-size: 1.5em;
+}
+
+span {
+    margin: 0 auto;
+    display: table;
+}
+
+button:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
