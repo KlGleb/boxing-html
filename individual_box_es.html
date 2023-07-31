@@ -11,6 +11,7 @@
 
         $(document).ready(function () {
             $('#submitButton').on('click', function () {
+                $('#content').html('');
 
                 let tableItem = {
                     length: document.getElementById('length').value,
@@ -53,10 +54,14 @@
                                     }
                                 }
 
+                                console.log(table);
+
                                 let resBox = table[0];
 
                                 for (let box in table) {
                                     if (isBoxAppropriate(tableItem, box) && betterThan(box, resBox)) {
+                                        console.log('New box:');
+                                        console.log(box);
                                         resBox = box;
                                     }
                                 }
