@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Read Google Sheets into Array</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script>
+        var table = [];
+
+        $(document).ready(function () {
+            $('#submitButton').on('click', function () {
+
+                let tableItem = {
+                    length: document.getElementById('length').value,
+                    width: document.getElementById('width').value,
+                    height: document.getElementById('height').value,
+                };
+
+
+                table = [];
+                let spreadsheetId = '1tCqOlEFo8uiPJ8qhz2eta-j9_urxl1PFJYattAJL2XE';
+                let sheetName = 'ES WH';
+                let startRow = 2; // starting row for reading
+
+
+                if (spreadsheetId && sheetName) {
+                    gapi.load('client', function () {
+                        gapi.client.init({
+                            apiKey: 'AIzaSyD-YbjZSIF6UT_CPjDgylg1AmYcW6gF-7U',
+                            discoveryDocs: ['https://sheets.googleapis.com/$discovery/rest?version=v4']
+                        }).then(function () {
+                            log('Loading the spreadsheet');
+                            return gapi.client.sheets.spreadsheets.values.get({
+                                spreadsheetId: spreadsheetId,
+                                range: sheetName + '!A' + startRow + ':L'
+                            });
+                        }).then(function (response) {
+
+                            let values = response.result.values;
+
+                            if (values && values.length > 0) {
+
+                                for (let i = 0; i < values.length; i++) {
+                                    if (values[i][0]) {
+                                        let row = {};
+                                        row.box = values[i][0];
+                                        row.l = parseFloat(values[i][1]);
+                                        row.w = parseFloat(values[i][2]);
+                                        row.h = parseFloat(values[i][3]);
+                                        table.push(row);
+                                    }
+                                }
+
+                                let resBox = table[0];
+
+                                for (let box in table) {
+                                    if (isBoxAppropriate(tableItem, box) && betterThan(box, resBox)) {
+                                        resBox = box;
+                                    }
+                                }
+
+                                if (resBox.l && resBox.w && resBox.h) {
+                                    $('#content').html('' + resBox.l + 'X' + resBox.w + 'X' + resBox.h + '<br/>Box type: ' + resBox.box + '</b>');
+                                }
+
+                            }
+                        }, function (reason) {
+                            $('#content').html('Error: <b>' + reason.result.error.message + '</b>');
+                            console.log('Error: ' + reason.result.error.message);
+                        });
+                    });
+                }
+            });
+        });
+
+        function isBoxAppropriate(tableItem, box) {
+            return (tableItem.height <= box.h && ((tableItem.length <= box.l && tableItem.width <= box.w) || (tableItem.width <= box.l && tableItem.length <= box.w)))
+        }
+
+        function betterThan(box1, box2) {
+            return (box1.l * box1.w * box1.h) < (box2.w * box2.l * box2.h)
+        }
+
+        function log(msg) {
+            /* let div = document.createElement("item");
+             div.innerText = msg;
+             document.getElementById('console').appendChild(div);
+             document.getElementById('console').appendChild(document.createElement("br"));*/
+        }
+    </script>
+</head>
+
+<body>
+    <div id="dimensionsDiv">
+        <label for="length">Length:</label><br>
+        <input type="text" id="length" name="length" required>
+        <span id="lengthError" class="error"></span><br>
+        <label for="width">Width:</label><br>
+        <input type="text" id="width" name="width" required>
+        <span id="widthError" class="error"></span><br>
+        <label for="height">Height:</label><br>
+        <input type="text" id="height" name="height" required>
+        <span id="heightError" class="error"></span><br>
+        <button id="submitButton" disabled>Submit</button>
+    </div>
+
+    <br />
+    <div id="content"></div>
+
+    <script src="validation.js"></script>
+</body>
+
+</html>
