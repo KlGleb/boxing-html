@@ -58,7 +58,8 @@
 
                                 let resBox = table[0];
 
-                                for (let box in table) {
+                                for (let i in table) {
+                                    let box = table[i];
                                     if (isBoxAppropriate(tableItem, box) && betterThan(box, resBox)) {
                                         console.log('New box:');
                                         console.log(box);
